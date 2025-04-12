@@ -1,0 +1,85 @@
+\documentclass{article}
+\usepackage{setspace}
+\doublespacing
+% Language setting
+% Replace `english' with e.g. `spanish' to change the document language
+\usepackage[english]{babel}
+
+% Set page size and margins
+% Replace `letterpaper' with `a4paper' for UK/EU standard size
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+% Useful packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\title{SNG LaTeX Ken}
+\author{Ken Liu}
+
+\begin{document}
+\maketitle
+
+\begin{equation}
+\theta^{''} = -\frac{3g}{2L}\cos\theta\\
+\end{equation}
+\begin{equation}
+\left\{
+\begin{aligned}
+x(t) = x_c+t-5\cos\theta\\
+y(t)=5\sin\theta
+\end{aligned}
+\right.
+\label{eq:system}
+\end{equation}
+\noindent The ground is assumed to be parallel to the tangent of the surface of the Earth.
+
+\noindent $\theta \equiv$ the angle that the ladder forms with the ground.
+
+\noindent $\omega \equiv$ the angular velocity of the ladder.
+
+\noindent $\alpha \equiv$ the angular acceleration of the ladder.\\
+
+\noindent and the angle between the ladder and the floor changes with time in accordance with the equation
+
+\begin{equation}
+\theta (t) = \arccos \frac{X(t)}{t}
+\end{equation}
+
+\noindent where $X(t)$ is given by $X(t) = x_0 + t \cdot V(t)$ and $V(t)$ is given as $1$ m/s.
+
+\noindent Because \[\omega = \lim_{\Delta t -> 0} \frac{\Delta \theta}{\Delta t} = \frac{d\theta}{dt}\] the angular velocity of the falling end of the ladder can be determined by
+
+{\Large
+\begin{equation}
+\omega(t) = -\frac{V(t) + t\frac{dV}{dt}}{L \sqrt{1 - \frac{(x_0 + tV(t))^2}{L^2}}}
+\end{equation}
+}
+\noindent Furthermore, since 
+\[\alpha \equiv \lim_{\Delta t -> 0} \frac{\Delta \omega}{\Delta t} = \frac{d\omega}{dt}\] the angular acceleration of the falling end of the ladder can be given by
+
+{\Large
+\begin{equation}
+\alpha(t) = - \frac{(x_0+tV(t))(V(t)+t\frac{dV}{dt})^2 + L^2 (1-\frac{(x_0+tV(t))^2}{L^2})(2\frac{dV}{dt}+t\frac{d^2V}{dt^2})}{L^3(1-\frac{(x_0+tV(t))^2}{L^2})^\frac{3}{2}}
+\end{equation}
+}
+\noindent A little more manipulation gives us:
+
+\begin{equation}
+v_x(t) = (\frac{k}{m}t+\frac{1}{v_{0x}})^{-1}
+\end{equation}
+
+\noindent This gives us the velocity of the ball in the x-direction at time $t$. We also want the position at time $t$, which we derive by integrating:
+
+\begin{equation}
+p_x(t) = \int v_x(t)dt = \int(\frac{k}{m}t+\frac{1}{v_{0x}})^{-1} dt = \frac{m}{k} \ln \mid kv_{0x}t+m \mid
+\end{equation}
+
+\noindent In the y-direction, equations must take into account both air friction and gravity. We can start the same way as with the x-direction \cite{greenwade93}:
+\begin{equation}
+F_y = g-kv_y^2 = ma_y = m \frac{dv_y}{dt}
+\end{equation}
+\bibliographystyle{alpha}
+\bibliography{sample}
+
+\end{document}
