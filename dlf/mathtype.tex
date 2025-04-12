@@ -1,0 +1,67 @@
+\documentclass[fleqn]{article}
+\usepackage{ctex}  
+\usepackage{amsmath}
+\usepackage{graphicx} 
+\usepackage[T1]{fontenc}
+\usepackage{lipsum}
+\usepackage{fancyhdr}  % 加载 fancyhdr 包
+\usepackage{lastpage}
+\usepackage{caption}
+\usepackage{float} % 在导言区加载
+
+
+\begin{document}
+
+\section*{练习一}
+\begin{equation}
+    equation(A) \;\; \theta'' = -\frac{3g}{2L}cos(\theta) 
+\end{equation}
+\begin{equation}
+    equation(B) \;\;
+        \begin{cases}
+          x(t)=x_c+t-5cos(\theta) \\
+          y(t)=5sin(\theta)
+        \end{cases}
+\end{equation}
+The ground is assumed to be parallel to the tangent of the surface of the Earth.\\
+$\theta \equiv$ the angle that the ladder forms with the ground. \\
+$\omega \equiv$ the angular velocity of the ladder. \\
+$\alpha \equiv$ the angular acceleration of the ladder.
+
+\pagebreak
+\numberwithin{equation}{section}
+\section*{练习二}
+\setcounter{section}{1}
+and the angle between the ladder and the floor changes with time in accordance with the equation\\
+\begin{equation}
+    \theta(t) = arccos (\frac{X(t)}{L})
+\end{equation}
+where X(t) is given by $X(t) = x_0 + t \cdot V(t)$ is given as $ 1 m/s$. \\
+Because $\omega = \lim\limits_{\Delta t \to 0} \frac{\Delta \theta}{\Delta t} = \frac{\mathrm{d}\theta}{\mathrm{d}t}$, the angular velocity of the falling end of the ladder can be determined by \\
+\begin{equation}
+    \omega(t) = - \frac{V(t)+t\frac{dV}{dt}}{L\sqrt{1-\frac{(x_0+tV(t))^2}{L^2}}}
+\end{equation}
+Furthermore, since $\alpha \equiv \lim\limits_{\Delta t \to 0} \frac{\Delta \omega}{\Delta t} = \frac{d \omega}{dt}$, the angular acceleration of the falling end of the ladder can be given by \\
+\begin{equation}
+    \alpha(t) = - \frac{(x_0+tV(t))\left(V(t)+t\frac{dV}{dt}\right)^2 + L^2\left(1-\frac{(x_0+tV(t))^2}{L^2}\right) \left(2\frac{dV}{dt}+t\frac{d^2V}{dt^2}\right)}{L^3\left(1-\frac{\left(x_0+tV(t)\right)^2}{L2}\right)^{3/2}}
+\end{equation}
+\pagebreak
+
+\section*{练习三}
+\renewcommand{\theequation}{\arabic{equation}}
+A little more manipulation gives us: \\
+\setcounter{equation}{15}
+\begin{equation}
+    \mathrm{v_x}(t) = \left(\frac{k}{m}t+\frac{1}{\mathrm{v_{0x}}}\right)^{-1}
+\end{equation}
+This give us the velocity of the ball in the $x$-direction at time $t$. \\
+We also want the position at time $t$, which we derive by integrating: \\
+\begin{equation}
+    p_x(t) = \int v_x(t)dt = \int \left(\frac{k}{m}t+\frac{1}{v_{0x}}\right)^{-1}dt = \frac{m}{k} ln |kv_{0x}t+m|
+\end{equation}
+In the $y$-direction, equations must take into account both air friction and gravity. We can start the same way as with the $x$-direction:
+\begin{equation}
+    F_y = g - kv_y^2 = ma_y = m\frac{dv_y}{dt}
+\end{equation}
+\end{document}
+
