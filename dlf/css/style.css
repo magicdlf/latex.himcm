@@ -1,0 +1,397 @@
+/* 全局样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    background-color: #f0f0f0;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+header {
+    width: 100%;
+    background-color: #333;
+    color: white;
+    padding: 20px 0;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.header-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+/* 列样式 */
+.column {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.left-column, .right-column {
+    width: 22%;
+}
+
+.center-column {
+    width: 52%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 玩家信息样式 */
+.player-info, .opponent-info {
+    margin-bottom: 20px;
+}
+
+.player-info h2, .opponent-info h2 {
+    margin-bottom: 10px;
+    font-size: 1.5rem;
+    color: #333;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 5px;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    margin-bottom: 5px;
+}
+
+/* 行动点数进度条样式 */
+.ap-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.ap-progress-container {
+    width: 100%;
+    height: 8px;
+    background-color: #ecf0f1;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.ap-progress {
+    height: 100%;
+    background-color: #3498db;
+    width: 0%;
+    transition: width 0.1s ease-out;
+}
+
+/* 控制按钮样式 */
+.controls {
+    margin-bottom: 20px;
+}
+
+.controls h3 {
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin: 5px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+/* 难度选择样式 */
+.difficulty-selector {
+    margin-bottom: 20px;
+}
+
+.difficulty-selector h3 {
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background-color: white;
+}
+
+/* 游戏规则样式 */
+.game-rules {
+    margin-bottom: 20px;
+}
+
+.game-rules h3 {
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+.game-rules ul {
+    list-style-type: disc;
+    padding-left: 20px;
+}
+
+.game-rules li {
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+/* 游戏状态样式 */
+.game-status {
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: bold;
+    color: #333;
+    width: 100%;
+}
+
+/* 棋盘样式 */
+#chess-board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    width: 500px;
+    height: 500px;
+    border: 4px solid #333;
+    margin: 0 auto;
+}
+
+.square {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.light {
+    background-color: #f0d9b5;
+}
+
+.dark {
+    background-color: #b58863;
+}
+
+/* 选中方格样式 */
+.selected {
+    background-color: rgba(106, 173, 230, 0.5) !important;
+}
+
+.valid-move {
+    position: relative;
+}
+
+.valid-move::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: rgba(50, 205, 50, 0.5);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+/* 棋子样式 */
+.piece {
+    width: 90%;
+    height: 90%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* 使用SVG棋子图片 */
+.king.white {
+    background-image: url('../images/chessnut/wK.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.queen.white {
+    background-image: url('../images/chessnut/wQ.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.rook.white {
+    background-image: url('../images/chessnut/wR.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.bishop.white {
+    background-image: url('../images/chessnut/wB.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.knight.white {
+    background-image: url('../images/chessnut/wN.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.pawn.white {
+    background-image: url('../images/chessnut/wP.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.king.black {
+    background-image: url('../images/chessnut/bK.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.queen.black {
+    background-image: url('../images/chessnut/bQ.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.rook.black {
+    background-image: url('../images/chessnut/bR.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.bishop.black {
+    background-image: url('../images/chessnut/bB.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.knight.black {
+    background-image: url('../images/chessnut/bN.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.pawn.black {
+    background-image: url('../images/chessnut/bP.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* 移除棋子文本内容 */
+.piece::before {
+    content: '';
+}
+
+/* 历史记录样式 */
+.history {
+    margin-bottom: 20px;
+}
+
+.history h3 {
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+    color: #333;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 5px;
+}
+
+#history-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    background-color: #f9f9f9;
+}
+
+.move {
+    margin-bottom: 5px;
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+}
+
+/* 响应式设计 */
+@media (max-width: 1000px) {
+    .container {
+        flex-direction: column;
+    }
+    
+    .left-column, .center-column, .right-column {
+        width: 100%;
+    }
+    
+    #chess-board {
+        width: 100%;
+        max-width: 500px;
+        height: auto;
+        aspect-ratio: 1/1;
+    }
+} 

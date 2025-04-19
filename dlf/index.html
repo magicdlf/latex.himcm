@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时国际象棋</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <h1 class="header-title">实时国际象棋</h1>
+    </header>
+
+    <div class="container">
+        <!-- 左侧栏 - 玩家信息 -->
+        <div class="column left-column">
+            <div class="player-info">
+                <h2>玩家 (白方)</h2>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="ap-container">
+                            <span class="stat-value" id="player-ap">6</span>
+                            <span class="stat-label">行动点数</span>
+                            <div class="ap-progress-container">
+                                <div id="player-ap-progress" class="ap-progress"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="player-score">0</span>
+                        <span class="stat-label">分数</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="player-captured">0</span>
+                        <span class="stat-label">吃子数</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <h3>游戏控制</h3>
+                <button id="new-game-btn">新游戏</button>
+                <button id="undo-btn">撤销</button>
+            </div>
+
+            <div class="difficulty-selector">
+                <h3>AI难度</h3>
+                <select id="difficulty">
+                    <option value="easy">简单</option>
+                    <option value="medium" selected>中等</option>
+                    <option value="hard">困难</option>
+                </select>
+            </div>
+
+            <div class="game-rules">
+                <h3>游戏规则</h3>
+                <ul>
+                    <li>行动点数上限为10点，每0.1秒恢复0.1点</li>
+                    <li>每个棋子移动有0.5秒的冷却时间</li>
+                    <li>移动消耗AP: 兵=1, 骑士=2, 主教=2, 车=3, 后=4, 王=2</li>
+                    <li>吃子获得与被吃棋子价值相等的分数</li>
+                    <li>棋子价值: 兵=1, 骑士=3, 主教=3, 车=5, 后=9, 王=0</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 中间栏 - 棋盘 -->
+        <div class="column center-column">
+            <div class="game-status" id="game-status">游戏进行中</div>
+            <div id="chess-board"></div>
+        </div>
+
+        <!-- 右侧栏 - 对手信息和历史记录 -->
+        <div class="column right-column">
+            <div class="opponent-info">
+                <h2>对手 (黑方)</h2>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="ap-container">
+                            <span class="stat-value" id="opponent-ap">6</span>
+                            <span class="stat-label">行动点数</span>
+                            <div class="ap-progress-container">
+                                <div id="opponent-ap-progress" class="ap-progress"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="opponent-score">0</span>
+                        <span class="stat-label">分数</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="opponent-captured">0</span>
+                        <span class="stat-label">吃子数</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="history">
+                <h3>移动历史</h3>
+                <div id="history-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html> 
