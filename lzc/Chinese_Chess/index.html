@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国象棋游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-info">
+            <div class="score-board">
+                <div class="player-score">
+                    <span>玩家: </span>
+                    <span id="player-score">0</span>
+                </div>
+                <div class="ai-score">
+                    <span>电脑: </span>
+                    <span id="ai-score">0</span>
+                </div>
+            </div>
+            <div class="countdown-timer">
+                <div class="player-timer" id="player-timer">
+                    <div class="timer-label">玩家时间</div>
+                    <div class="timer-value" id="player-time">10:00</div>
+                </div>
+                <div class="ai-timer" id="ai-timer">
+                    <div class="timer-label">电脑时间</div>
+                    <div class="timer-value" id="ai-time">10:00</div>
+                </div>
+            </div>
+            <div class="timer-container">
+                <div class="time-display">
+                    <span>总时间: </span>
+                    <span id="timer">00:00</span>
+                </div>
+                <button id="start-btn">开始游戏</button>
+                <button id="reset-btn">重新开始</button>
+            </div>
+            <div class="turn-display">
+                <span>当前回合: </span>
+                <span id="current-player">玩家</span>
+            </div>
+        </div>
+        <div class="chess-board" id="chess-board">
+            <!-- 棋盘会通过JavaScript动态生成 -->
+        </div>
+        <div class="game-records">
+            <div class="move-history">
+                <h3>战局记录</h3>
+                <ul id="move-list"></ul>
+            </div>
+            <div class="capture-stats">
+                <h3>吃子统计</h3>
+                <ul id="capture-list">
+                    <li>红方吃子: <span id="red-captures">0</span></li>
+                    <li>黑方吃子: <span id="black-captures">0</span></li>
+                </ul>
+                <div id="captured-pieces" class="captured-pieces-container"></div>
+            </div>
+        </div>
+    </div>
+    <script src="chess.js"></script>
+</body>
+</html> 
