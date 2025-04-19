@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess App</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="game-info">
+            <div class="player player-black">
+                <div class="player-name">黑方 (AI)</div>
+                <div class="timer black-timer">10:00</div>
+                <div class="captured-pieces black-captured"></div>
+                <div class="ai-settings">
+                    <label for="ai-level">AI等级:</label>
+                    <select id="ai-level">
+                        <option value="1">简单</option>
+                        <option value="2">中等</option>
+                        <option value="3" selected>困难</option>
+                        <option value="4">专家</option>
+                        <option value="5">大师</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="new-game-btn">新游戏</button>
+                <button id="undo-btn">撤销</button>
+                <button id="resign-btn" class="danger-btn">投降</button>
+                <button id="ai-toggle-btn">切换AI</button>
+            </div>
+            
+            <div class="player player-white">
+                <div class="player-name">白方 (玩家)</div>
+                <div class="timer white-timer">10:00</div>
+                <div class="captured-pieces white-captured"></div>
+            </div>
+            
+            <div id="hint-container" class="hint-container hidden">
+                <div id="hint-text"></div>
+            </div>
+        </div>
+        
+        <div class="board-container">
+            <div id="chessboard"></div>
+            
+            <!-- Promotion dialog (hidden by default) -->
+            <div id="promotion-dialog" class="hidden">
+                <div class="promotion-pieces">
+                    <div class="promotion-piece" data-piece="queen"></div>
+                    <div class="promotion-piece" data-piece="rook"></div>
+                    <div class="promotion-piece" data-piece="bishop"></div>
+                    <div class="promotion-piece" data-piece="knight"></div>
+                </div>
+            </div>
+            
+            <!-- AI思考指示器 -->
+            <div id="ai-thinking" class="ai-thinking hidden">
+                <div class="thinking-animation">
+                    <span>AI思考中</span>
+                    <span class="dot">.</span>
+                    <span class="dot">.</span>
+                    <span class="dot">.</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="move-history">
+            <h3>着法记录</h3>
+            <div id="moves-container"></div>
+        </div>
+    </div>
+    
+    <!-- Rules Icon (positioned at bottom left) -->
+    <div id="rules-icon" class="rules-icon">
+        <i class="fas fa-book-open"></i>
+    </div>
+    
+    <!-- Chess Rules Dialog -->
+    <div id="rules-dialog" class="rules-dialog hidden">
+        <div class="rules-content">
+            <h2>国际象棋规则</h2>
+            <button id="close-rules-btn" class="close-btn">×</button>
+            
+            <div class="rules-section">
+                <h3>基本走法</h3>
+                <ul>
+                    <li><strong>兵（Pawn）</strong>: 向前走一格，第一次可以走两格。斜向吃子。</li>
+                    <li><strong>车（Rook）</strong>: 横向或纵向移动任意格数。</li>
+                    <li><strong>马（Knight）</strong>: L形移动，可以跳过其他棋子。</li>
+                    <li><strong>象（Bishop）</strong>: 沿对角线移动任意格数。</li>
+                    <li><strong>后（Queen）</strong>: 横向、纵向或对角线移动任意格数。</li>
+                    <li><strong>王（King）</strong>: 任意方向移动一格。</li>
+                </ul>
+            </div>
+            
+            <div class="rules-section">
+                <h3>特殊规则</h3>
+                <ul>
+                    <li><strong>王车易位</strong>: 如果王和车都没有移动过，王可以向车方向移动两格，车跳到王的另一侧。</li>
+                    <li><strong>吃过路兵</strong>: 当对手的兵一次走两格经过你的兵控制的格子时，你可以吃掉它。</li>
+                    <li><strong>兵的升变</strong>: 兵到达对方底线时，可以升变为后、车、象或马。</li>
+                    <li><strong>将军</strong>: 当王受到攻击时。必须解除将军状态。</li>
+                    <li><strong>将死</strong>: 王被将军且无法解除，游戏结束。</li>
+                    <li><strong>逼和</strong>: 当一方无合法着法但王没有被将军时，游戏和棋。</li>
+                </ul>
+            </div>
+            
+            <div class="rules-section">
+                <h3>其他规则</h3>
+                <ul>
+                    <li><strong>50步和棋规则</strong>: 如果连续50步没有吃子或移动兵，可以宣布和棋。</li>
+                    <li><strong>三次重复局面</strong>: 如果完全相同的局面出现三次，可以宣布和棋。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 游戏结算页面 -->
+    <div id="game-result-modal" class="modal hidden">
+        <div class="modal-content">
+            <div id="result-header"></div>
+            <div id="result-details"></div>
+            <div id="result-image"></div>
+            <div class="result-stats">
+                <div class="stat">
+                    <span>总步数:</span>
+                    <span id="total-moves">0</span>
+                </div>
+                <div class="stat">
+                    <span>用时:</span>
+                    <span id="game-duration">00:00</span>
+                </div>
+                <div class="stat">
+                    <span>被吃棋子:</span>
+                    <span id="captured-count">0</span>
+                </div>
+            </div>
+            <div class="result-actions">
+                <button id="new-game-result-btn">开始新游戏</button>
+                <button id="analyze-btn">分析棋局</button>
+                <button id="close-result-btn">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/chess.js"></script>
+    <script src="js/chess-ai.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html> 
