@@ -40,17 +40,15 @@
 
             <div class="controls">
                 <h3>游戏控制</h3>
+                <div class="difficulty-selector" style="margin-bottom: 10px; display: flex; align-items: center;">
+                    <label for="difficulty" style="margin-right: 5px; white-space: nowrap;">AI难度:</label>
+                    <select id="difficulty" style="width: auto; flex-grow: 1;">
+                        <option value="medium" selected>普通</option>
+                        <option value="simayi">司马懿</option>
+                    </select>
+                </div>
                 <button id="new-game-btn">新游戏</button>
-                <button id="undo-btn">撤销</button>
-            </div>
-
-            <div class="difficulty-selector">
-                <h3>AI难度</h3>
-                <select id="difficulty">
-                    <option value="easy">简单</option>
-                    <option value="medium" selected>中等</option>
-                    <option value="hard">困难</option>
-                </select>
+                <button id="undo-btn" disabled>撤销</button>
             </div>
 
             <div class="game-rules">
