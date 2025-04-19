@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Simple Chess App</h1>
+
+    <div id="difficulty-selection">
+        <h2>Choose AI Difficulty:</h2>
+        <button data-difficulty="survivor">Survivor (Random)</button>
+        <button data-difficulty="veteran">Veteran (Basic Heuristics)</button>
+        <button data-difficulty="nightmare">Nightmare (Minimax Depth 1)</button>
+        <button data-difficulty="doomsday">Doomsday (Minimax Depth 2)</button> 
+    </div>
+
+    <div id="game-area" class="hidden"> 
+        <div id="evaluation-bar-container">
+            <div id="evaluation-bar"></div>
+            <span id="evaluation-score">+0.0</span> 
+        </div>
+        <div id="captured-black-area">
+            Captured by Black: <span id="captured-by-black"></span>
+            <span id="material-diff-black" class="material-diff"></span>
+        </div>
+        <div id="timers">
+            <div id="white-timer">White: 10:00</div>
+            <div id="black-timer">Black: 10:00</div>
+        </div>
+        <div id="chessboard"></div>
+        <div id="captured-white-area">
+            Captured by White: <span id="captured-by-white"></span>
+            <span id="material-diff-white" class="material-diff"></span>
+        </div>
+        <div id="game-controls">
+            <div id="game-status"></div> 
+            <button id="resign-button">Resign</button>
+        </div>
+    </div> 
+
+    <div id="promotion-choice" class="hidden">
+        Promote pawn to:
+        <button data-piece="Q">Queen</button>
+        <button data-piece="R">Rook</button>
+        <button data-piece="B">Bishop</button>
+        <button data-piece="N">Knight</button>
+    </div>
+
+    <div id="game-over-dialog" class="hidden">
+        <h2 id="game-over-message"></h2>
+        <button id="new-game-button">New Game</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 

@@ -1,0 +1,271 @@
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* justify-content: center; */ /* Remove centering for now to see selection */
+    padding-top: 20px; /* Add some padding */
+    min-height: 100vh;
+    background-color: #f0f0f0;
+    font-family: sans-serif;
+}
+
+#chessboard {
+    width: 400px; /* Adjust size as needed */
+    height: 400px;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    /* border: 5px solid #333; */ /* Removed border */
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.square {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px; /* Adjust piece size */
+    user-select: none; /* Prevent text selection */
+    /* Add transition for background color changes */
+    transition: background-color 0.1s ease-in-out; 
+}
+
+.light {
+    background-color: #f0d9b5; /* Light square color */
+}
+
+.dark {
+    background-color: #b58863; /* Dark square color */
+}
+
+/* Add styles for piece highlighting or movement later */
+.selected {
+    background-color: yellow !important;
+}
+
+.possible-move {
+    position: relative;
+}
+
+.possible-move::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+}
+
+/* Timer Styles */
+#timers {
+    display: flex;
+    justify-content: space-between;
+    width: 400px; /* Match chessboard width */
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+#white-timer.active,
+#black-timer.active {
+    font-weight: bold;
+    color: green;
+}
+
+/* Game Area - initially hidden */
+/* #game-area.hidden is handled by .hidden rule */
+
+/* Evaluation Bar */
+#evaluation-bar-container {
+    width: 400px; /* Match board width */
+    height: 20px;
+    background-color: #555; /* Dark background for the bar track */
+    margin-bottom: 10px;
+    position: relative;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+#evaluation-bar {
+    height: 100%;
+    width: 50%; /* Start at 50% for neutral */
+    background-color: #eee; /* White for White's advantage */
+    transition: width 0.3s ease-out; /* Smooth transition */
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+#evaluation-score {
+    position: absolute;
+    right: 5px;
+    top: 1px;
+    color: #fff;
+    font-size: 0.85em;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px #000;
+    z-index: 1; /* Ensure score is above the bar */
+}
+
+/* Game Controls Area */
+#game-controls {
+    display: flex;
+    justify-content: space-between; /* Space out status and button */
+    align-items: center;
+    width: 400px; /* Match board width */
+    margin-top: 10px;
+    min-height: 30px; /* Ensure height */
+}
+
+#game-status {
+    /* margin-top: 10px; */ /* Removed margin as it's now in flex container */
+    font-size: 1.1em;
+    color: red;
+    font-weight: bold;
+    flex-grow: 1; /* Allow status to take available space */
+    text-align: left;
+}
+
+#resign-button {
+    padding: 5px 15px;
+    font-size: 0.9em;
+    cursor: pointer;
+    background-color: #f44336; /* Red */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+#resign-button:hover {
+    background-color: #d32f2f;
+}
+
+/* Promotion Choice Styles */
+#promotion-choice {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border: 2px solid black;
+    padding: 20px;
+    z-index: 10;
+    box-shadow: 0 0 15px rgba(0,0,0,0.7);
+}
+
+#promotion-choice button {
+    font-size: 1.2em;
+    margin: 5px;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Game Over Dialog Styles (similar to promotion) */
+#game-over-dialog {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #eee;
+    border: 3px solid #555;
+    border-radius: 10px;
+    padding: 30px;
+    z-index: 20; /* Ensure it's above other elements */
+    box-shadow: 0 5px 20px rgba(0,0,0,0.6);
+    text-align: center;
+}
+
+#game-over-dialog h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+#new-game-button {
+    font-size: 1.3em;
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #4CAF50; /* Green */
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+#new-game-button:hover {
+     background-color: #45a049;
+}
+
+/* Last Move Highlight */
+.last-move {
+    background-color: rgba(170, 170, 80, 0.5) !important; /* Semi-transparent yellowish */
+}
+
+/* Captured Pieces Area */
+#captured-white-area,
+#captured-black-area {
+    width: 400px; /* Match board width */
+    min-height: 30px; /* Ensure space even if empty */
+    margin: 5px 0;
+    font-size: 0.9em;
+    text-align: left;
+}
+
+/* Add margin specifically to the white captured area */
+#captured-white-area {
+    margin-top: 15px; /* Increased top margin to move it down */
+}
+
+#captured-white-area span,
+#captured-black-area span {
+    font-size: 1.5em; /* Make pieces larger */
+    margin-left: 10px;
+    word-spacing: -5px; /* Adjust spacing between pieces */
+}
+
+/* Material Difference Score Style */
+.material-diff {
+    font-size: 0.8em !important; /* Smaller font */
+    font-weight: bold;
+    color: #666;
+    margin-left: 15px !important;
+    vertical-align: middle; /* Align with text */
+}
+
+/* Difficulty Selection Styles */
+#difficulty-selection {
+    text-align: center;
+    margin-bottom: 30px;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+#difficulty-selection h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+#difficulty-selection button {
+    display: block; /* Make buttons stack */
+    width: 250px; /* Give buttons consistent width */
+    margin: 10px auto; /* Center buttons */
+    padding: 12px 20px;
+    font-size: 1.1em;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background-color: #f8f8f8;
+    border-radius: 5px;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+#difficulty-selection button:hover {
+    background-color: #e0e0e0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+} 
