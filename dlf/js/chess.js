@@ -999,422 +999,212 @@ class Chess {
         
         return notation;
     }
-}
+    
+    // 记录玩家选择的棋子
+    recordHumanSelection(row, col) {
+        const piece = this.getPiece(row, col);
+        if (piece && this.getPieceColor(piece) === 'w') {
+            if (this.ai) {
+                this.ai.recordSelectedPiece(row, col);
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    // 获取AI的counter日志
+    getCounterLog() {
+        if (this.ai) {
+            return this.ai.getCounterLog();
+        }
+        return [];
+    }
+    
+    // 在初始化AI时设置counter检测
+    initAI(difficulty = 'medium') {
+        this.ai = new ChessAI(this, difficulty);
+        this.ai.setupCounterDetection();
+        return this.ai;
+    }
 
-/**
- * 国际象棋AI引擎
- */
-class ChessAI {
-    constructor(chess, difficulty = 'medium') {
-        this.chess = chess;
-        this.setDifficulty(difficulty);
+    /**
+     * 预测对手可能的前三步最优移动
+     * @param {string} playerColor - 玩家颜色（'white'或'black'）
+     * @returns {Array} - 按照优先级排序的可能移动数组，每个移动包含 {fromRow, fromCol, toRow, toCol, score}
+     */
+    predictPlayerMoves(playerColor) {
+        // 获取所有可能的移动
+        const allMoves = [];
         
-        // 棋子价值表
-        this.pieceValues = {
-            'p': 100,
-            'n': 320,
-            'b': 330,
-            'r': 500,
-            'q': 900,
-            'k': 20000
-        };
-        
-        // 棋子位置评估表
-        this.piecePositionValues = {
-            'p': [
-                [0,  0,  0,  0,  0,  0,  0,  0],
-                [50, 50, 50, 50, 50, 50, 50, 50],
-                [10, 10, 20, 30, 30, 20, 10, 10],
-                [5,  5, 10, 25, 25, 10,  5,  5],
-                [0,  0,  0, 20, 20,  0,  0,  0],
-                [5, -5,-10,  0,  0,-10, -5,  5],
-                [5, 10, 10,-20,-20, 10, 10,  5],
-                [0,  0,  0,  0,  0,   0,  0,  0]
-            ],
-            'n': [
-                [-50,-40,-30,-30,-30,-30,-40,-50],
-                [-40,-20,  0,  0,  0,  0,-20,-40],
-                [-30,  0, 10, 15, 15, 10,  0,-30],
-                [-30,  5, 15, 20, 20, 15,  5,-30],
-                [-30,  0, 15, 20, 20, 15,  0,-30],
-                [-30,  5, 10, 15, 15, 10,  5,-30],
-                [-40,-20,  0,  5,  5,  0,-20,-40],
-                [-50,-40,-30,-30,-30,-30,-40,-50]
-            ],
-            'b': [
-                [-20,-10,-10,-10,-10,-10,-10,-20],
-                [-10,  0,  0,  0,  0,  0,  0,-10],
-                [-10,  0, 10, 10, 10, 10,  0,-10],
-                [-10,  5,  5, 10, 10,  5,  5,-10],
-                [-10,  0,  5, 10, 10,  5,  0,-10],
-                [-10,  5,  5,  5,  5,  5,  5,-10],
-                [-10,  0,  5,  0,  0,  5,  0,-10],
-                [-20,-10,-10,-10,-10,-10,-10,-20]
-            ],
-            'r': [
-                [0,  0,  0,  0,  0,  0,  0,  0],
-                [5, 10, 10, 10, 10, 10, 10,  5],
-                [-5,  0,  0,  0,  0,  0,  0, -5],
-                [-5,  0,  0,  0,  0,  0,  0, -5],
-                [-5,  0,  0,  0,  0,  0,  0, -5],
-                [-5,  0,  0,  0,  0,  0,  0, -5],
-                [-5,  0,  0,  0,  0,  0,  0, -5],
-                [0,  0,  0,  5,  5,  0,  0,  0]
-            ],
-            'q': [
-                [-20,-10,-10, -5, -5,-10,-10,-20],
-                [-10,  0,  0,  0,  0,  0,  0,-10],
-                [-10,  0,  5,  5,  5,  5,  0,-10],
-                [-5,  0,  5,  5,  5,  5,  0, -5],
-                [0,  0,  5,  5,  5,  5,  0, -5],
-                [-10,  5,  5,  5,  5,  5,  0,-10],
-                [-10,  0,  5,  0,  0,  0,  0,-10],
-                [-20,-10,-10, -5, -5,-10,-10,-20]
-            ],
-            'k': [
-                [-30,-40,-40,-50,-50,-40,-40,-30],
-                [-30,-40,-40,-50,-50,-40,-40,-30],
-                [-30,-40,-40,-50,-50,-40,-40,-30],
-                [-30,-40,-40,-50,-50,-40,-40,-30],
-                [-20,-30,-30,-40,-40,-30,-30,-20],
-                [-10,-20,-20,-20,-20,-20,-20,-10],
-                [20, 20,  0,  0,  0,  0, 20, 20],
-                [20, 30, 10,  0,  0, 10, 30, 20]
-            ],
-            'k_endgame': [
-                [-50,-40,-30,-20,-20,-30,-40,-50],
-                [-30,-20,-10,  0,  0,-10,-20,-30],
-                [-30,-10, 20, 30, 30, 20,-10,-30],
-                [-30,-10, 30, 40, 40, 30,-10,-30],
-                [-30,-10, 30, 40, 40, 30,-10,-30],
-                [-30,-10, 20, 30, 30, 20,-10,-30],
-                [-30,-30,  0,  0,  0,  0,-30,-30],
-                [-50,-30,-30,-30,-30,-30,-30,-50]
-            ]
-        };
-    }
-    
-    // 设置AI难度
-    setDifficulty(difficulty) {
-        switch(difficulty) {
-            case 'easy':
-                this.searchDepth = 2;
-                this.randomFactor = 0.3;
-                break;
-            case 'medium':
-                this.searchDepth = 2;
-                this.randomFactor = 0.1;
-                break;
-            case 'hard':
-                this.searchDepth = 3;
-                this.randomFactor = 0;
-                break;
-            default:
-                this.searchDepth = 2;
-                this.randomFactor = 0.1;
-        }
-    }
-    
-    // 获取电脑的最佳移动
-    getBestMove() {
-        let bestMove = null;
-        let bestScore = -Infinity;
-        
-        // 获取黑方可移动的棋子（这里假设AI总是黑方）
-        const movablePieces = this.getAllMovablePieces('b');
-        
-        // 没有可移动的棋子
-        if (movablePieces.length === 0) {
-            return null;
-        }
-        
-        // 随机排序以增加多样性
-        this.shuffleArray(movablePieces);
-        
-        // 检查当前行动点数
-        const currentActionPoints = this.chess.actionPoints['b'];
-        
-        // 筛选出当前点数可以移动的棋子
-        const affordablePieces = movablePieces.filter(pieceInfo => {
-            const piece = this.chess.getPiece(pieceInfo.row, pieceInfo.col);
-            const cost = this.chess.getMoveCost(piece);
-            return cost <= currentActionPoints;
-        });
-        
-        // 如果没有可以消费得起的棋子，返回null
-        if (affordablePieces.length === 0) {
-            return null;
-        }
-        
-        // 优先考虑能吃掉对方国王的移动
-        for (const pieceInfo of affordablePieces) {
-            const { row, col, moves } = pieceInfo;
-            
-            for (const move of moves) {
-                const targetPiece = this.chess.getPiece(move.row, move.col);
+        // 遍历棋盘
+        for (let fromRow = 0; fromRow < 8; fromRow++) {
+            for (let fromCol = 0; fromCol < 8; fromCol++) {
+                const piece = this.getPiece(fromRow, fromCol);
                 
-                // 如果可以吃掉对方国王，立即选择这个移动
-                if (targetPiece === 'K') {
-                    return { from: { row, col }, to: move, promotion: 'q' };
-                }
-            }
-        }
-        
-        // 按照棋子消耗的点数排序，优先使用低点数的棋子
-        affordablePieces.sort((a, b) => {
-            const pieceA = this.chess.getPiece(a.row, a.col);
-            const pieceB = this.chess.getPiece(b.row, b.col);
-            return this.chess.getMoveCost(pieceA) - this.chess.getMoveCost(pieceB);
-        });
-        
-        // 随机选择前几个可用棋子中的一个来降低计算量
-        const selectedPieces = affordablePieces.slice(0, Math.min(3, affordablePieces.length));
-        
-        for (const pieceInfo of selectedPieces) {
-            const { row, col, moves } = pieceInfo;
-            
-            for (const move of moves) {
-                // 模拟移动
-                const moveResult = this.chess.makeMove(row, col, move.row, move.col, true);
-                
-                // 兵升变默认为后
-                if (moveResult.isPromotion) {
-                    this.chess.board[move.row][move.col] = 'q';
-                }
-                
-                // 计算分数
-                const score = this.minimax(this.searchDepth - 1, -Infinity, Infinity, true);
-                
-                // 撤销移动
-                this.chess.undoMove(moveResult);
-                
-                // 添加随机因素
-                const adjustedScore = score + (Math.random() * 2 - 1) * this.randomFactor * 100;
-                
-                // 更新最佳移动
-                if (adjustedScore > bestScore) {
-                    bestScore = adjustedScore;
-                    bestMove = { from: { row, col }, to: move, promotion: 'q' };
-                }
-            }
-        }
-        
-        return bestMove;
-    }
-    
-    // Minimax算法带Alpha-Beta剪枝
-    minimax(depth, alpha, beta, isMaximizing) {
-        // 到达搜索深度或游戏结束
-        if (depth === 0 || this.chess.gameOver) {
-            return this.evaluateBoard();
-        }
-        
-        // 在同时下棋模式下，我们仍然需要模拟回合制
-        // isMaximizing表示当前是白方（最大化评分）还是黑方（最小化评分）
-        const currentPlayer = isMaximizing ? 'w' : 'b';
-        const movablePieces = this.getAllMovablePieces(currentPlayer);
-        
-        // 如果没有可移动的棋子，提前返回评分
-        if (movablePieces.length === 0) {
-            return this.evaluateBoard();
-        }
-        
-        if (isMaximizing) {
-            let maxScore = -Infinity;
-            
-            for (const pieceInfo of movablePieces) {
-                const { row, col, moves } = pieceInfo;
-                
-                for (const move of moves) {
-                    // 模拟移动
-                    const moveResult = this.chess.makeMove(row, col, move.row, move.col, true);
-                    
-                    // 兵升变默认为后
-                    if (moveResult.isPromotion) {
-                        this.chess.board[move.row][move.col] = 'Q';
-                    }
-                    
-                    // 递归评估
-                    const score = this.minimax(depth - 1, alpha, beta, false);
-                    
-                    // 撤销移动
-                    this.chess.undoMove(moveResult);
-                    
-                    maxScore = Math.max(maxScore, score);
-                    alpha = Math.max(alpha, score);
-                    
-                    if (beta <= alpha) {
-                        break; // Beta剪枝
-                    }
-                }
-                
-                if (beta <= alpha) {
-                    break; // Beta剪枝
-                }
-            }
-            
-            return maxScore;
-        } else {
-            let minScore = Infinity;
-            
-            for (const pieceInfo of movablePieces) {
-                const { row, col, moves } = pieceInfo;
-                
-                for (const move of moves) {
-                    // 模拟移动
-                    const moveResult = this.chess.makeMove(row, col, move.row, move.col, true);
-                    
-                    // 兵升变默认为后
-                    if (moveResult.isPromotion) {
-                        this.chess.board[move.row][move.col] = 'q';
-                    }
-                    
-                    // 递归评估
-                    const score = this.minimax(depth - 1, alpha, beta, true);
-                    
-                    // 撤销移动
-                    this.chess.undoMove(moveResult);
-                    
-                    minScore = Math.min(minScore, score);
-                    beta = Math.min(beta, score);
-                    
-                    if (beta <= alpha) {
-                        break; // Alpha剪枝
-                    }
-                }
-                
-                if (beta <= alpha) {
-                    break; // Alpha剪枝
-                }
-            }
-            
-            return minScore;
-        }
-    }
-    
-    // 获取指定颜色的所有可移动棋子
-    getAllMovablePieces(color) {
-        const movablePieces = [];
-        
-        for (let row = 0; row < 8; row++) {
-            for (let col = 0; col < 8; col++) {
-                const piece = this.chess.getPiece(row, col);
-                if (piece && this.chess.getPieceColor(piece) === color) {
-                    const legalMoves = this.chess.getLegalMovesForPiece(row, col);
-                    if (legalMoves.length > 0) {
-                        movablePieces.push({ row, col, piece, moves: legalMoves });
-                    }
-                }
-            }
-        }
-        
-        return movablePieces;
-    }
-    
-    // 评估当前棋盘状态
-    evaluateBoard() {
-        // 如果国王被吃掉，立即返回极值
-        const whiteKingExists = this.chess.board.flat().some(piece => piece === 'K');
-        const blackKingExists = this.chess.board.flat().some(piece => piece === 'k');
-        
-        if (!whiteKingExists) return -20000;
-        if (!blackKingExists) return 20000;
-        
-        if (this.chess.checkmate) {
-            // 如果是将死，返回极值
-            return this.chess.turn === 'w' ? -10000 : 10000;
-        }
-        
-        if (this.chess.stalemate || this.chess.draw) {
-            // 如果是和棋，返回0
-            return 0;
-        }
-        
-        let score = 0;
-        
-        // 计算所有棋子的总价值和位置价值
-        for (let row = 0; row < 8; row++) {
-            for (let col = 0; col < 8; col++) {
-                const piece = this.chess.board[row][col];
-                if (piece) {
-                    const pieceType = piece.toLowerCase();
-                    const pieceColor = this.chess.getPieceColor(piece);
-                    
-                    // 棋子基础价值
-                    const value = this.pieceValues[pieceType];
-                    
-                    // 棋子位置价值(白方从下方看，黑方从上方看)
-                    let positionValue = 0;
-                    
-                    if (pieceType === 'k' && this.isEndgame()) {
-                        // 残局中的王使用不同的位置评估表
-                        positionValue = pieceColor === 'w' ? 
-                            this.piecePositionValues['k_endgame'][row][col] : 
-                            this.piecePositionValues['k_endgame'][7-row][col];
-                    } else {
-                        positionValue = pieceColor === 'w' ? 
-                            this.piecePositionValues[pieceType][row][col] : 
-                            this.piecePositionValues[pieceType][7-row][col];
-                    }
-                    
-                    // 累加分数
-                    score += (pieceColor === 'w') ? (value + positionValue) : -(value + positionValue);
-                }
-            }
-        }
-        
-        // 机动性评估(可移动的棋子数量)
-        const whiteMovable = this.getAllMovablePieces('w').length;
-        const blackMovable = this.getAllMovablePieces('b').length;
-        score += (whiteMovable - blackMovable) * 10;
-        
-        // 检查威胁
-        if (this.chess.isInCheck('w')) {
-            score -= 50;
-        }
-        if (this.chess.isInCheck('b')) {
-            score += 50;
-        }
-        
-        // 行动点数差异
-        const actionPointsDiff = this.chess.actionPoints['w'] - this.chess.actionPoints['b'];
-        score += actionPointsDiff * 5; // 行动点数差异的权重
-        
-        return score;
-    }
-    
-    // 判断是否是残局
-    isEndgame() {
-        // 当一方的主力棋子(车后)数量少于3个时，视为残局
-        let majorPiecesWhite = 0;
-        let majorPiecesBlack = 0;
-        
-        for (let row = 0; row < 8; row++) {
-            for (let col = 0; col < 8; col++) {
-                const piece = this.chess.board[row][col];
-                if (piece) {
-                    const pieceType = piece.toLowerCase();
-                    const pieceColor = this.chess.getPieceColor(piece);
-                    
-                    if (pieceType === 'q' || pieceType === 'r') {
-                        if (pieceColor === 'w') {
-                            majorPiecesWhite++;
-                        } else {
-                            majorPiecesBlack++;
+                // 检查是否是玩家的棋子
+                if (piece && piece.color === playerColor) {
+                    for (let toRow = 0; toRow < 8; toRow++) {
+                        for (let toCol = 0; toCol < 8; toCol++) {
+                            // 检查移动是否有效
+                            if (this.isValidMove(fromRow, fromCol, toRow, toCol)) {
+                                // 评估移动价值
+                                let moveScore = 0;
+                                
+                                // 检查是否可以吃子
+                                const targetPiece = this.getPiece(toRow, toCol);
+                                if (targetPiece) {
+                                    // 吃子的价值
+                                    const pieceValues = {
+                                        'p': 1, 'n': 3, 'b': 3, 'r': 5, 'q': 9, 'k': 0
+                                    };
+                                    moveScore += pieceValues[targetPiece.type.toLowerCase()] * 10;
+                                }
+                                
+                                // 检查移动后是否会将军
+                                const tempBoard = this.clone();
+                                tempBoard.makeMove(fromRow, fromCol, toRow, toCol);
+                                const opponentColor = playerColor === 'white' ? 'black' : 'white';
+                                const opponentKingPosition = tempBoard.findKing(opponentColor);
+                                
+                                if (opponentKingPosition && 
+                                    tempBoard.isSquareUnderAttack(opponentKingPosition.row, opponentKingPosition.col, playerColor)) {
+                                    moveScore += 20; // 将军的高价值
+                                }
+                                
+                                // 中心控制
+                                if ((toRow === 3 || toRow === 4) && (toCol === 3 || toCol === 4)) {
+                                    moveScore += 2;
+                                }
+                                
+                                // 添加到可能移动列表
+                                allMoves.push({
+                                    fromRow,
+                                    fromCol,
+                                    toRow,
+                                    toCol,
+                                    score: moveScore
+                                });
+                            }
                         }
                     }
                 }
             }
         }
         
-        return majorPiecesWhite < 3 || majorPiecesBlack < 3;
+        // 按分数排序
+        allMoves.sort((a, b) => b.score - a.score);
+        
+        // 返回前三个最可能的移动
+        return allMoves.slice(0, 3);
     }
-    
-    // 随机打乱数组顺序
-    shuffleArray(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
+
+    /**
+     * 检查AI的移动是否阻止了玩家预期的移动
+     * @param {Object} aiMove - AI的移动 {fromRow, fromCol, toRow, toCol}
+     * @param {string} playerColor - 玩家颜色
+     * @returns {Array} - 被阻止的玩家移动列表
+     */
+    checkMovesCountered(aiMove, playerColor) {
+        // 记录移动前玩家的可能移动
+        const predictedMovesBefore = this.predictPlayerMoves(playerColor);
+        
+        // 执行AI移动的临时副本
+        const tempBoard = this.clone();
+        tempBoard.makeMove(aiMove.fromRow, aiMove.fromCol, aiMove.toRow, aiMove.toCol);
+        
+        // 记录移动后玩家的可能移动
+        const predictedMovesAfter = tempBoard.predictPlayerMoves(playerColor);
+        
+        // 找出被阻止的移动
+        const counteredMoves = [];
+        predictedMovesBefore.forEach(beforeMove => {
+            // 检查这个移动是否还在"后"列表中
+            const stillValid = predictedMovesAfter.some(afterMove => 
+                afterMove.fromRow === beforeMove.fromRow && 
+                afterMove.fromCol === beforeMove.fromCol && 
+                afterMove.toRow === beforeMove.toRow && 
+                afterMove.toCol === beforeMove.toCol
+            );
+            
+            if (!stillValid) {
+                counteredMoves.push(beforeMove);
+            }
+        });
+        
+        return counteredMoves;
+    }
+
+    /**
+     * 寻找王的位置
+     * @param {string} color - 王的颜色
+     * @returns {Object|null} - 包含行和列的对象，如果没找到则返回null
+     */
+    findKing(color) {
+        const kingSymbol = color === 'white' ? 'K' : 'k';
+        
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const piece = this.getPiece(row, col);
+                if (piece && piece.type.toLowerCase() === 'k' && piece.color === color) {
+                    return { row, col };
+                }
+            }
         }
+        
+        return null;
+    }
+
+    /**
+     * 检查指定方格是否被攻击
+     * @param {number} row - 行索引
+     * @param {number} col - 列索引
+     * @param {string} attackerColor - 攻击方颜色
+     * @returns {boolean} - 如果方格被攻击则返回true
+     */
+    isSquareUnderAttack(row, col, attackerColor) {
+        for (let fromRow = 0; fromRow < 8; fromRow++) {
+            for (let fromCol = 0; fromCol < 8; fromCol++) {
+                const piece = this.getPiece(fromRow, fromCol);
+                if (piece && piece.color === attackerColor) {
+                    if (this.isValidMove(fromRow, fromCol, row, col, true)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * 创建当前棋盘状态的副本
+     * @returns {Chess} - 新的棋盘对象
+     */
+    clone() {
+        const newChess = new Chess();
+        
+        // 复制棋盘状态
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const piece = this.getPiece(row, col);
+                if (piece) {
+                    newChess.board[row][col] = {
+                        type: piece.type,
+                        color: piece.color
+                    };
+                } else {
+                    newChess.board[row][col] = null;
+                }
+            }
+        }
+        
+        // 复制游戏状态
+        newChess.turn = this.turn;
+        newChess.castling = { ...this.castling };
+        newChess.enPassantTarget = this.enPassantTarget ? { ...this.enPassantTarget } : null;
+        newChess.halfMoveClock = this.halfMoveClock;
+        newChess.fullMoveNumber = this.fullMoveNumber;
+        
+        return newChess;
     }
 } 

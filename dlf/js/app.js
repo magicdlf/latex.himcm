@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         opponentCaptured: 0,
         gameActive: false,
         moveHistory: [],
-        difficulty: 'medium',
+        difficulty: 'normal', // 改为normal作为默认难度
         lastMoveTime: {
             white: 0,
             black: 0
@@ -34,7 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- 新增：存储玩家预定的移动 ---
         pendingPlayerMove: null, // { fromRow, fromCol, toRow, toCol, moveCost, timeoutId }
         // --- 新增：存储当前激活的冷却动画 interval ID ---
-        cooldownIntervals: {} // key: 'row-col', value: intervalId
+        cooldownIntervals: {}, // key: 'row-col', value: intervalId
+        aiStrategy: 'simayi',
+        aiColor: 'black',
+        // --- 新增：AI行动间隔和行动力恢复参数 ---
+        aiActionInterval: 300, // 默认AI两次行动间隔(毫秒)
+        apRegenMultiplier: 1.0 // 行动力恢复速度倍率
     };
     
     // 棋子价值
@@ -56,6 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
         'queen': 4,
         'king': 2
     };
+    
+    // 添加显示预测移动的变量
+    var showPredictions = false;
+    var counteredMoves = 0;
     
     // --- 新增：清理冷却视觉效果的函数 ---
     function clearCooldownVisual(row, col) {
@@ -656,11 +665,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!gameState.gameActive) return;
 
         const now = Date.now();
-        const globalCooldown = 500; // AI 全局冷却 0.5 秒
-
-        // --- 检查 AI 全局冷却 ---
-        if (now - gameState.lastMoveTime.black < globalCooldown) {
-            // console.log(`AI Global Cooldown Active: Need ${globalCooldown}ms, have ${now - gameState.lastMoveTime.black}ms. Skipping.`);
+        const globalCooldown = 500; // 基础全局冷却 0.5 秒
+        
+        // --- 检查 AI 全局冷却：使用配置的行动间隔 ---
+        // 取基础全局冷却和配置的行动间隔中的较大值
+        const actualCooldown = Math.max(globalCooldown, gameState.aiActionInterval);
+        if (now - gameState.lastMoveTime.black < actualCooldown) {
             return;
         }
 
@@ -670,56 +680,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
         isAiThinking = true;
         try {
-            // console.log("AI Evaluating moves..."); // 减少日志频率
-            // updateGameStatus('对方正在思考...'); // 思考时间很短，可以不显示
-
-            // --- 移除固定思考延迟 ---
-            // await new Promise(resolve => setTimeout(resolve, 1000));
-
             // 根据难度选择 AI 策略 (会过滤掉冷却中的棋子)
             let bestMove;
-            if (gameState.difficulty === 'simayi') {
-                // console.log("Using SimaYi AI");
+            if (gameState.aiStrategy === 'simayi') {
                 bestMove = findSimaYiMove('black');
             } else {
-                // console.log("Using Standard AI");
-                bestMove = findBestMove('black');
+                bestMove = findWeiYanMove('black');
             }
 
             if (bestMove) {
                 const piece = gameState.board[bestMove.fromRow][bestMove.fromCol];
-                // --- 再次确认棋子存在 (防御性编程) ---
+                // --- 防御性检查 ---
                 if (!piece || piece.color !== 'black') {
                     console.error("AI Logic Error: Selected non-existent or wrong color piece:", bestMove, piece);
                     updateGameStatus('AI 内部逻辑错误，请稍候...');
-                    return; // 提前返回，避免后续错误
+                    return;
                 }
 
                 const moveCost = moveCosts[piece.type];
 
                 // --- 检查 AP 是否足够执行选定的移动 ---
                 if (gameState.opponentAP >= moveCost) {
-                    // --- 再次检查棋子冷却 (理论上 getAllPossibleMoves 已过滤，但作为保险) ---
-                    const pieceCooldown = 1000;
-                    if (now - piece.lastMovedTime < pieceCooldown) {
-                        console.warn("AI Warning: Selected piece is still on cooldown, skipping move.", piece);
-                        // 不更新状态，等下一轮
+                    // --- 根据难度级别处理棋子冷却 ---
+                    const pieceCooldown = 1000; // 基础棋子冷却时间 1 秒
+                    
+                    // 地狱难度下，无视或减少棋子冷却
+                    let reducedPieceCooldown = pieceCooldown;
+                    if (gameState.difficulty === 'hell') {
+                        reducedPieceCooldown = 300; // 地狱难度棋子只需冷却0.3秒
+                    } else if (gameState.difficulty === 'hard') {
+                        reducedPieceCooldown = 600; // 困难难度棋子冷却0.6秒
+                    }
+                    
+                    if (now - piece.lastMovedTime < reducedPieceCooldown) {
+                        // 棋子还在冷却中
                         return;
                     }
 
                     // --- 执行移动 ---
                     movePiece(bestMove.fromRow, bestMove.fromCol, bestMove.toRow, bestMove.toCol);
                     gameState.opponentAP -= moveCost;
-                    // gameState.lastMoveTime.black 会在 movePiece 中更新
                     updateStats();
-                    // updateGameStatus('对方移动...'); // 移动提示由 movePiece 统一处理
                     checkGameEnd();
-                } else {
-                    // console.log('对方行动点数不足，等待中...'); // AP不足是正常情况，不必频繁提示
                 }
             } else {
-                 // console.log('对方无棋可走或所有棋子冷却中...'); // 无棋可走也是正常情况
-                checkGameEnd(); // 即使无棋可走也要检查结束条件 (例如被将死但无法移动)
+                checkGameEnd(); // 即使无棋可走也要检查结束条件
             }
         } catch (error) {
             console.error("Error during AI action:", error);
@@ -799,10 +804,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 开始新游戏
     function startNewGame() {
-        const difficultySelect = document.getElementById('difficulty');
-        gameState.difficulty = difficultySelect.value;
-        console.log("Starting new game with difficulty:", gameState.difficulty);
-
+        // 初始化游戏状态
+        gameState.gameActive = true;
+        gameState.selectedPiece = null;
         gameState.playerAP = 10;
         gameState.opponentAP = 10;
         gameState.playerScore = 0;
@@ -810,20 +814,77 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.playerCaptured = 0;
         gameState.opponentCaptured = 0;
         gameState.moveHistory = [];
-        // --- 重置全局冷却时间 ---
-        gameState.lastMoveTime = { white: 0, black: 0 };
-        // --- 棋子冷却会在 initializeBoard 中通过 placePiece 重置 ---
-
-        gameState.gameActive = true;
-
-        initializeBoard(); // 会重置棋盘和棋子冷却
+        gameState.lastMoveTime = {
+            white: 0,
+            black: 0
+        };
+        gameState.pendingPlayerMove = null;
+        
+        // 获取难度设置
+        const difficultySelect = document.getElementById('difficulty');
+        if (difficultySelect) {
+            gameState.difficulty = difficultySelect.value;
+            
+            // 根据难度设置AI参数
+            if (gameState.difficulty === 'easy') {
+                // 简单难度 - 行动间隔长，行动力恢复慢
+                gameState.aiStrategy = 'simayi';
+                gameState.aiActionInterval = 1000; // 1秒行动间隔
+                gameState.apRegenMultiplier = 0.5; // 行动力恢复慢一倍
+            } 
+            else if (gameState.difficulty === 'normal') {
+                // 普通难度 - 标准参数
+                gameState.aiStrategy = 'simayi';
+                gameState.aiActionInterval = 300; // 0.3秒行动间隔
+                gameState.apRegenMultiplier = 1.0; // 正常行动力恢复
+            }
+            else if (gameState.difficulty === 'hard') {
+                // 困难难度 - 行动间隔短，行动力恢复快
+                gameState.aiStrategy = 'simayi';
+                gameState.aiActionInterval = 100; // 0.1秒行动间隔
+                gameState.apRegenMultiplier = 1.5; // 行动力恢复快50%
+            }
+            else if (gameState.difficulty === 'hell') {
+                // 地狱难度 - 几乎无行动间隔，行动力恢复极快
+                gameState.aiStrategy = 'simayi';
+                gameState.aiActionInterval = 0; // 无行动间隔
+                gameState.apRegenMultiplier = 2.0; // 行动力恢复快一倍
+            }
+            else if (gameState.difficulty === 'weiyan') {
+                // 魏延难度
+                gameState.aiStrategy = 'weiyan';
+                gameState.aiActionInterval = 300; // 0.3秒行动间隔
+                gameState.apRegenMultiplier = 1.0; // 正常行动力恢复
+            }
+        }
+        
+        // 清理冷却计时器
+        Object.keys(gameState.cooldownIntervals).forEach(key => {
+            clearInterval(gameState.cooldownIntervals[key]);
+        });
+        gameState.cooldownIntervals = {};
+        
+        // 初始化棋盘
+        initializeBoard();
+        
+        // 显示游戏状态
+        updateGameStatus('新游戏开始！白方先行');
+        
+        // 更新UI状态
         updateStats();
         updateMoveHistory();
-        undoBtn.disabled = true;
-        // --- 更新游戏开始说明 ---
-        updateGameStatus(`游戏开始！难度: ${gameState.difficulty === 'simayi' ? '司马懿' : '普通'}. 规则: AP驱动, 全局冷却0.5s, 单子冷却1s`);
-        // --- 新增：初始化棋子AP状态 ---
-        updatePieceAPStatus();
+        
+        // 禁用撤销按钮
+        document.getElementById('undo-btn').disabled = true;
+        
+        // 清理预测标记
+        clearPredictionMarkers();
+        updateCounterDisplay();
+        
+        // 确保当前玩家设置
+        gameState.currentPlayer = 'white';
+
+        console.log(`游戏开始！AI策略: ${gameState.aiStrategy}, 难度: ${gameState.difficulty}, 行动间隔: ${gameState.aiActionInterval}ms, AP恢复倍率: ${gameState.apRegenMultiplier}x`);
     }
     
     // 撤销最后一步移动
@@ -851,9 +912,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // 难度选择变化时，只更新状态，不重开游戏
         document.getElementById('difficulty').addEventListener('change', (e) => {
             gameState.difficulty = e.target.value;
-            // 可以在这里给个提示，说明难度将在下一局生效
+            // 提示难度变更
+            updateGameStatus(`难度已设置为: ${getChineseDifficultyName(e.target.value)}, 将在新游戏生效`);
             console.log("Difficulty changed to:", gameState.difficulty, "(effective next game)");
         });
+    }
+    
+    // 获取难度的中文名称
+    function getChineseDifficultyName(difficultyValue) {
+        switch(difficultyValue) {
+            case 'easy': return '简单(司马懿)';
+            case 'normal': return '普通(司马懿)';
+            case 'hard': return '困难(司马懿)';
+            case 'hell': return '地狱(司马懿)';
+            case 'weiyan': return '魏延';
+            default: return difficultyValue;
+        }
     }
     
     // 初始化游戏
@@ -863,7 +937,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 初始化棋盘用于显示，但不激活游戏 ---
     initializeBoard(); 
     updateStats(); // 更新初始 AP 显示
-    updateGameStatus('选择难度点击"新游戏". 规则: AP驱动, 全局冷却0.5s, 单子冷却1s. 点击冷却中棋子的目标可预定移动.');
+    updateGameStatus('选择难度点击"新游戏". 简单/普通/困难/地狱(司马懿策略,行动间隔和AP恢复不同) 或 魏延(双线攻击).');
     // --- 新增：初始化棋子AP状态 ---
     updatePieceAPStatus();
     
@@ -876,7 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
             gameState.playerAP = Math.min(10, gameState.playerAP + 0.1);
         }
         if (gameState.opponentAP < 10) {
-            gameState.opponentAP = Math.min(10, gameState.opponentAP + 0.1);
+            gameState.opponentAP = Math.min(10, gameState.opponentAP + 0.1 * gameState.apRegenMultiplier);
         }
         updateStats();
 
@@ -933,21 +1007,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 新增：检查格子是否被指定颜色攻击 ---
-    function isSquareThreatened(targetRow, targetCol, attackerColor) {
-        // 遍历对方所有棋子，看是否有棋子能走到目标格子
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                const piece = gameState.board[r][c];
+    function isSquareThreatened(targetRow, targetCol, attackerColor, excludeRow = -1, excludeCol = -1) {
+        // 检查是否指定位置被指定颜色的棋子攻击
+        // 可选参数：excludeRow/excludeCol 可以用来忽略特定位置的攻击者（用于检查吃掉威胁棋子的情况）
+        
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                // 忽略排除的位置（如果指定）
+                if (row === excludeRow && col === excludeCol) continue;
+                
+                const piece = gameState.board[row][col];
                 if (piece && piece.color === attackerColor) {
-                    // 使用 isValidMove 检查是否能攻击目标格子
-                    // 注意：isValidMove 本身可能需要完善以处理将军等情况，这里简化使用
-                    if (isValidMove(r, c, targetRow, targetCol)) {
-                        return true; // 找到一个能攻击的棋子
+                    // 检查该棋子是否能够移动到目标位置
+                    if (isValidMove(row, col, targetRow, targetCol)) {
+                        if (excludeRow >= 0 && excludeCol >= 0) {
+                            // 如果是检查特定威胁，返回true表示找到了威胁来源
+                            return true;
+                        }
+                        // 否则，任何攻击都使格子受到威胁
+                        return true;
                     }
                 }
             }
         }
-        return false; // 没有找到能攻击的棋子
+        
+        return false;
     }
     // --- 威胁检查结束 ---
 
@@ -961,6 +1045,31 @@ document.addEventListener('DOMContentLoaded', () => {
         let bestMoves = [];
         let highestScore = -Infinity;
 
+        // 修正棋子价值，确保王的价值极高
+        const pieceValues = {
+            'pawn': 1,
+            'knight': 3,
+            'bishop': 3,
+            'rook': 5,
+            'queen': 9,
+            'king': 100  // 王的价值设为极高，确保优先保护王和吃掉对方的王
+        };
+
+        // 行动力保护阈值 - 即使执行高优先级移动也应保留的最小行动力
+        const MIN_AP_RESERVE = 3;
+        
+        // 如果当前行动力已经很低，大幅增加消耗惩罚系数
+        const getApCostPenalty = (currentAP, cost) => {
+            // 当行动力小于等于MIN_AP_RESERVE时，大幅增加消耗惩罚
+            if (currentAP - cost <= MIN_AP_RESERVE) {
+                return cost * 5; // 大幅增加消耗惩罚
+            } else if (currentAP < 6) {
+                return cost * 2; // 中度增加消耗惩罚
+            } else {
+                return cost * 0.5; // 默认消耗惩罚
+            }
+        };
+
         // 1. 评估每个移动
         for (const move of possibleMoves) {
             const fromRow = move.fromRow;
@@ -972,67 +1081,81 @@ document.addEventListener('DOMContentLoaded', () => {
             const moveCost = moveCosts[piece.type];
             let score = 0;
 
-            // --- 基础分：扣除移动成本，鼓励节省AP ---
-            score -= moveCost * 0.5; // 移动成本越高，基础分越低
+            // --- 行动力消耗惩罚，根据当前行动力动态调整 ---
+            score -= getApCostPenalty(gameState.opponentAP, moveCost);
 
             // --- 检查移动后的位置是否安全 ---
             const isToSquareSafe = !isSquareThreatened(toRow, toCol, opponentColor);
 
-            // --- A. 高优先级：处理对我方高价值棋子的威胁 ---
-            // A.1 检查是否吃掉了正在威胁我方棋子的对方棋子
-            if (targetPiece) {
-                // 检查 targetPiece 是否正在攻击我方某棋子 (简化：检查它是否能走到我方任一棋子位置)
-                let isThreatening = false;
-                let threatenedValue = 0;
-                for (let r = 0; r < 8; r++) {
-                    for (let c = 0; c < 8; c++) {
-                        const myPiece = gameState.board[r][c];
-                        if (myPiece && myPiece.color === color && isValidMove(toRow, toCol, r, c)) {
-                            isThreatening = true;
-                            threatenedValue = Math.max(threatenedValue, pieceValues[myPiece.type] || 0);
-                            break;
-                        }
-                    }
-                    if (isThreatening) break;
-                }
-                if (isThreatening) {
-                    score += 15 + threatenedValue * 2; // 吃掉威胁者得分极高，与被威胁棋子价值相关
-                }
-            }
-
-            // A.2 检查是否移动了正在被威胁的我方棋子到安全位置
+            // --- 检查当前位置是否真的受到威胁（使用正确的威胁判断函数）---
             const isFromSquareThreatened = isSquareThreatened(fromRow, fromCol, opponentColor);
-            if (isFromSquareThreatened && isToSquareSafe) {
-                score += 10 + (pieceValues[piece.type] || 0); // 解救被威胁棋子得分很高
-            }
 
-            // --- B. 中优先级：反击与有利交换 ---
-            // B.1 吃子得分 (基础分)
-            if (targetPiece) {
-                score += (pieceValues[targetPiece.type] || 0) * 1.5;
-                // 如果吃掉的是进入我方半场的棋子，加分
-                if (color === 'black' && toRow <= 3) score += 1;
-                else if (color === 'white' && toRow >= 4) score += 1;
-            }
-
-            // B.2 避免移动到不安全位置 (除非是为了吃高价值棋子)
-            if (!isToSquareSafe && (!targetPiece || (pieceValues[targetPiece.type] || 0) < (pieceValues[piece.type] || 0))) {
-                 score -= 20 + (pieceValues[piece.type] || 0); // 将棋子移动到危险位置受到重罚
-            }
-
-            // --- C. 低优先级：保守发展 (只有在AP充足且位置安全时考虑) ---
-            if (!targetPiece && isToSquareSafe && gameState.opponentAP > 6) { // 假设 AP > 6 算充足
-                // 鼓励小兵安全前进一格
-                if (piece.type === 'pawn' && Math.abs(toRow - fromRow) === 1) {
-                    score += 0.3;
+            // --- 特殊情况：当王受到威胁时的紧急处理 ---
+            if (piece.type === 'king' && isFromSquareThreatened) {
+                score += 50; // 王受威胁，尝试移动的紧急优先级
+                if (isToSquareSafe) {
+                    score += 30; // 额外奖励移动到安全位置
                 }
+            }
+
+            // --- A. 高优先级：处理对我方高价值棋子的威胁 ---
+            // 真正受到威胁的棋子才需要解救，且移动后应该安全
+            if (isFromSquareThreatened && isToSquareSafe) {
+                score += 8 + (pieceValues[piece.type] || 0); // 降低基础解救分数，更依赖于棋子价值
+            }
+
+            // --- 处理吃子逻辑 ---
+            if (targetPiece) {
+                // 特殊处理：吃王
+                if (targetPiece.type === 'king') {
+                    score += 1000; // 吃王极高优先级
+                } else {
+                    // 普通吃子评分
+                    score += (pieceValues[targetPiece.type] || 0) * 1.5;
+                    
+                    // 检查是否吃掉威胁棋子
+                    const targetThreateningPiece = isSquareThreatened(fromRow, fromCol, opponentColor, toRow, toCol);
+                    if (targetThreateningPiece) {
+                        score += 5; // 吃掉威胁棋子的额外奖励
+                    }
+                    
+                    // 额外考虑吃子的行动力效率
+                    if (pieceValues[targetPiece.type] > moveCost) {
+                        score += 2; // 当吃到的棋子价值大于消耗行动力时的额外奖励
+                    }
+                }
+            }
+
+            // --- B. 中优先级：位置改善 ---
+            // 避免移动到不安全位置 (除非是为了吃高价值棋子)
+            if (!isToSquareSafe && (!targetPiece || (pieceValues[targetPiece.type] || 0) < (pieceValues[piece.type] || 0))) {
+                 score -= 15 + (pieceValues[piece.type] || 0); // 降低惩罚，但仍然显著
+            }
+
+            // --- C. 低优先级：保守发展 (降低行动力阈值要求) ---
+            if (!targetPiece && isToSquareSafe && gameState.opponentAP > 4) { // 行动力阈值从6降低到4
+                // 鼓励小兵安全前进
+                if (piece.type === 'pawn') {
+                    // 根据推进距离给奖励
+                    const advanceReward = color === 'black' ? (fromRow - toRow) : (toRow - fromRow);
+                    if (advanceReward > 0) {
+                        score += 0.5 * advanceReward;
+                    }
+                    
+                    // 特别鼓励推进到对方半场
+                    if ((color === 'black' && toRow < 4) || (color === 'white' && toRow > 3)) {
+                        score += 0.3;
+                    }
+                }
+                
                 // 鼓励马象移动到安全的中心区域
                 else if ((piece.type === 'knight' || piece.type === 'bishop') && (toRow >= 2 && toRow <= 5 && toCol >= 2 && toCol <= 5)) {
                     score += 0.4;
                 }
-                // 不鼓励王、后、车在早期无目的地移动
-                if (piece.type === 'king') score -= 0.5;
-                if (piece.type === 'queen' || piece.type === 'rook') score -= 0.2;
+                
+                // 不鼓励王、后、车在早期无目的地移动 - 但降低惩罚
+                if (piece.type === 'king') score -= 0.3;
+                if (piece.type === 'queen' || piece.type === 'rook') score -= 0.1;
             }
             
             // 添加微小的随机性，以区分评分相同的移动
@@ -1062,57 +1185,466 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // --- 司马懿 AI 结束 ---
 
-    // --- 新增：清理冷却视觉效果的函数 ---
-    function clearCooldownVisual(row, col) {
-        const key = `${row}-${col}`;
-        if (gameState.cooldownIntervals[key]) {
-            clearInterval(gameState.cooldownIntervals[key]);
-            delete gameState.cooldownIntervals[key];
-            const square = document.querySelector(`.square[data-row="${row}"][data-col="${col}"]`);
-            const pieceElement = square?.querySelector('.piece');
-            const overlay = pieceElement?.querySelector('.cooldown-overlay');
-            if (overlay) {
-                overlay.remove();
+    // 添加在棋盘上显示预测移动的函数
+    function displayPredictedMoves() {
+        if (!showPredictions) return;
+        
+        // 清除之前的预测标记
+        clearPredictionMarkers();
+        
+        // 获取当前玩家颜色
+        const playerColor = chess.turn === 'w' ? 'white' : 'black';
+        
+        // 预测玩家可能的移动
+        const predictedMoves = chess.predictPlayerMoves(playerColor);
+        
+        // 显示预测移动
+        predictedMoves.forEach((move, index) => {
+            const fromSquare = document.querySelector(`.square[data-row="${move.fromRow}"][data-col="${move.fromCol}"]`);
+            const toSquare = document.querySelector(`.square[data-row="${move.toRow}"][data-col="${move.toCol}"]`);
+            
+            if (fromSquare && toSquare) {
+                // 创建预测标记
+                const marker = document.createElement('div');
+                marker.className = 'prediction-marker';
+                marker.textContent = (index + 1).toString();
+                marker.style.backgroundColor = ['gold', 'silver', '#cd7f32'][index]; // 金、银、铜
+                
+                // 添加标记到目标方格
+                toSquare.appendChild(marker);
+                
+                // 添加出发点标记
+                const fromMarker = document.createElement('div');
+                fromMarker.className = 'prediction-marker from-marker';
+                fromMarker.textContent = (index + 1).toString();
+                fromMarker.style.backgroundColor = ['gold', 'silver', '#cd7f32'][index];
+                fromSquare.appendChild(fromMarker);
             }
+        });
+    }
+
+    // 清除预测标记
+    function clearPredictionMarkers() {
+        const markers = document.querySelectorAll('.prediction-marker');
+        markers.forEach(marker => marker.remove());
+    }
+
+    // 更新计数器显示
+    function updateCounterDisplay() {
+        document.getElementById('counter-count').textContent = counteredMoves;
+    }
+
+    // 创建计数器UI
+    function createCounterUI() {
+        const uiContainer = document.createElement('div');
+        uiContainer.id = 'game-ui-container';
+        uiContainer.innerHTML = `
+            <div class="ui-panel">
+                <div class="ui-toggle">
+                    <label for="predictions-toggle">显示预测移动:</label>
+                    <input type="checkbox" id="predictions-toggle">
+                </div>
+                <div class="counter-display">
+                    <span>被阻止的移动:</span>
+                    <span id="counter-count">0</span>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(uiContainer);
+        
+        // 添加切换预测显示的事件监听器
+        document.getElementById('predictions-toggle').addEventListener('change', function(e) {
+            showPredictions = e.target.checked;
+            if (showPredictions) {
+                displayPredictedMoves();
+            } else {
+                clearPredictionMarkers();
+            }
+        });
+    }
+
+    // 初始化UI
+    function initUI() {
+        createCounterUI();
+        updateCounterDisplay();
+        
+        // 添加CSS样式
+        const style = document.createElement('style');
+        style.textContent = `
+            #game-ui-container {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                z-index: 1000;
+            }
+            
+            .ui-panel {
+                background-color: rgba(255, 255, 255, 0.9);
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                padding: 10px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                margin-bottom: 10px;
+            }
+            
+            .ui-toggle {
+                margin-bottom: 10px;
+            }
+            
+            .counter-display {
+                font-weight: bold;
+            }
+            
+            .prediction-marker {
+                position: absolute;
+                top: 5px;
+                right: 5px;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                color: black;
+                font-weight: bold;
+                font-size: 12px;
+                z-index: 10;
+            }
+            
+            .from-marker {
+                top: auto;
+                right: auto;
+                bottom: 5px;
+                left: 5px;
+                opacity: 0.6;
+            }
+
+            /* 难度选择器样式 */
+            #difficulty-container {
+                display: flex;
+                justify-content: center;
+                margin-bottom: 10px;
+            }
+            
+            #difficulty {
+                padding: 5px;
+                border-radius: 5px;
+                border: 1px solid #ccc;
+                font-size: 15px;
+                margin-left: 10px;
+            }
+            
+            .difficulty-label {
+                font-weight: bold;
+                line-height: 30px;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 更新难度选择器
+        updateDifficultySelector();
+    }
+
+    // 更新难度选择器
+    function updateDifficultySelector() {
+        const difficultySelect = document.getElementById('difficulty');
+        if (difficultySelect) {
+            // 清空现有选项
+            difficultySelect.innerHTML = '';
+            
+            // 创建并添加新选项
+            const difficulties = [
+                { value: 'easy', text: '简单(司马懿)' },
+                { value: 'normal', text: '普通(司马懿)' },
+                { value: 'hard', text: '困难(司马懿)' },
+                { value: 'hell', text: '地狱(司马懿)' },
+                { value: 'weiyan', text: '魏延(标准)' }
+            ];
+            
+            difficulties.forEach(diff => {
+                const option = document.createElement('option');
+                option.value = diff.value;
+                option.textContent = diff.text;
+                difficultySelect.appendChild(option);
+            });
+            
+            // 设置默认值为'normal'
+            difficultySelect.value = 'normal';
+        } else {
+            console.error("难度选择器元素未找到");
         }
     }
 
-    // --- 新增：启动冷却视觉效果的函数 ---
-    function startCooldownVisual(pieceElement, duration) {
-        const square = pieceElement.closest('.square');
-        if (!square) return; // Sanity check
-        const row = square.dataset.row;
-        const col = square.dataset.col;
-        const key = `${row}-${col}`;
+    // 初始化UI界面
+    initUI();
 
-        // 清理可能存在的旧计时器
-        clearCooldownVisual(row, col);
-
-        // 创建覆盖层
-        const overlay = document.createElement('div');
-        overlay.className = 'cooldown-overlay';
-        // Ensure the piece itself has position:relative for overlay positioning
-        if (window.getComputedStyle(pieceElement).position === 'static') {
-             pieceElement.style.position = 'relative';
+    // 修改AI移动函数以检查并记录阻止的移动
+    function aiMove() {
+        if (!gameState.isAIThinking && gameState.currentPlayer === 'black') {
+            gameState.isAIThinking = true;
+            
+            // 短暂延迟，给UI更新的时间
+            setTimeout(() => {
+                const move = gameState.chessAI.calculateBestMove(chess);
+                
+                if (move) {
+                    const aiMoveObj = {
+                        fromRow: move.fromRow,
+                        fromCol: move.fromCol,
+                        toRow: move.toRow,
+                        toCol: move.toCol
+                    };
+                    
+                    // 检查AI移动是否阻止了玩家的预期移动
+                    const playerColor = 'white'; // 玩家总是白色
+                    const counteredMovesList = chess.checkMovesCountered(aiMoveObj, playerColor);
+                    
+                    // 执行移动
+                    makeMove(move.fromRow, move.fromCol, move.toRow, move.toCol);
+                    
+                    // 更新计数器
+                    if (counteredMovesList && counteredMovesList.length > 0) {
+                        counteredMoves += counteredMovesList.length;
+                        updateCounterDisplay();
+                        
+                        // 显示被阻止的移动的视觉提示
+                        counteredMovesList.forEach(move => {
+                            const fromSquare = document.querySelector(`.square[data-row="${move.fromRow}"][data-col="${move.fromCol}"]`);
+                            const toSquare = document.querySelector(`.square[data-row="${move.toRow}"][data-col="${move.toCol}"]`);
+                            
+                            if (fromSquare && toSquare) {
+                                // 添加"被阻止"的视觉效果
+                                fromSquare.classList.add('countered-move');
+                                toSquare.classList.add('countered-move');
+                                
+                                // 2秒后移除效果
+                                setTimeout(() => {
+                                    fromSquare.classList.remove('countered-move');
+                                    toSquare.classList.remove('countered-move');
+                                }, 2000);
+                            }
+                        });
+                    }
+                    
+                    // 更新预测移动显示
+                    displayPredictedMoves();
+                }
+                
+                gameState.isAIThinking = false;
+            }, 500);
         }
-        pieceElement.appendChild(overlay);
+    }
 
-        const startTime = Date.now();
+    // 修改onDomContentLoaded函数以初始化UI
+    document.addEventListener('DOMContentLoaded', function() {
+        // ... existing code ...
+        
+        // 初始化UI界面
+        initUI();
+    });
 
-        // 使用 setInterval 更新角度
-        const intervalId = setInterval(() => {
-            const elapsedTime = Date.now() - startTime;
-            const progress = Math.min(1, elapsedTime / duration);
-            const angle = 360 * progress;
-
-            overlay.style.backgroundImage = `conic-gradient(rgba(255, 255, 255, 0.6) ${angle}deg, transparent ${angle}deg)`;
-
-            if (progress >= 1) {
-                clearCooldownVisual(row, col); // 清理自身
+    // 魏延AI - 积累行动力后同时在两路发起进攻
+    function findWeiYanMove(color) {
+        const opponentColor = color === 'white' ? 'black' : 'white';
+        const currentAP = color === 'white' ? gameState.playerAP : gameState.opponentAP;
+        const weiyanThreshold = 8; // 行动力达到8点时进入进攻阶段
+        
+        // 阶段判断 - 积累或进攻
+        const isAttackPhase = currentAP >= weiyanThreshold;
+        
+        // 获取所有可能的移动
+        const allMoves = getAllPossibleMoves(color);
+        if (allMoves.length === 0) return null;
+        
+        // 评估每个移动
+        const evaluatedMoves = allMoves.map(move => {
+            const { fromRow, fromCol, toRow, toCol } = move;
+            const piece = gameState.board[fromRow][fromCol];
+            
+            // 基础评分
+            let score = 0;
+            
+            // 目标位置有敌方棋子时的得分(吃子)
+            const targetPiece = gameState.board[toRow][toCol];
+            if (targetPiece && targetPiece.color !== color) {
+                score += pieceValues[targetPiece.type] * 10;
             }
-        }, 50); // 每 50ms 更新一次，比较平滑
+            
+            // 移动消耗的行动点数
+            const moveCost = moveCosts[piece.type];
+            
+            // 在准备阶段，优先考虑低成本、防御性的移动
+            if (!isAttackPhase) {
+                // 防御评分 - 避免把自己的高价值棋子暴露在危险中
+                if (isSquareThreatened(toRow, toCol, opponentColor)) {
+                    score -= pieceValues[piece.type] * 5;
+                }
+                
+                // 偏好低成本移动
+                score -= moveCost * 2;
+                
+                // 偏好中心控制和发展
+                if ((toRow >= 2 && toRow <= 5) && (toCol >= 2 && toCol <= 5)) {
+                    score += 2;
+                }
+                
+                // 避免移动王，除非必要
+                if (piece.type === 'king') {
+                    score -= 5;
+                }
+                
+                // 避免过早出动后
+                if (piece.type === 'queen' && currentAP < 6) {
+                    score -= 4;
+                }
+            } 
+            // 进攻阶段 - 寻找两路攻击的机会
+            else {
+                // 确保有足够的行动点进行移动
+                if (moveCost > currentAP) {
+                    return { ...move, score: -1000 }; // 无法执行的移动
+                }
+                
+                // 攻击评分
+                if (targetPiece) {
+                    // 吃子的价值
+                    score += pieceValues[targetPiece.type] * 15;
+                    
+                    // 如果能吃掉无防护的棋子，优先级更高
+                    if (!isSquareThreatened(toRow, toCol, color)) {
+                        score += 10;
+                    }
+                }
+                
+                // 检查移动后是否能威胁对手重要棋子
+                const simulatedBoard = JSON.parse(JSON.stringify(gameState.board));
+                // 模拟移动
+                simulatedBoard[toRow][toCol] = simulatedBoard[fromRow][fromCol];
+                simulatedBoard[fromRow][fromCol] = null;
+                
+                // 计算该移动能威胁多少敌方棋子
+                let threatenedPieces = 0;
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        const p = simulatedBoard[r][c];
+                        if (p && p.color === opponentColor) {
+                            // 检查是否受到威胁
+                            // 简化版检查：如果目标位置直接威胁敌方棋子
+                            if ((piece.type === 'queen' || piece.type === 'rook') && 
+                                (r === toRow || c === toCol)) {
+                                threatenedPieces++;
+                                score += pieceValues[p.type] * 2;
+                            } else if (piece.type === 'bishop' && 
+                                      Math.abs(r - toRow) === Math.abs(c - toCol)) {
+                                threatenedPieces++;
+                                score += pieceValues[p.type] * 2;
+                            } else if (piece.type === 'knight' && 
+                                      ((Math.abs(r - toRow) === 2 && Math.abs(c - toCol) === 1) || 
+                                       (Math.abs(r - toRow) === 1 && Math.abs(c - toCol) === 2))) {
+                                threatenedPieces++;
+                                score += pieceValues[p.type] * 2;
+                            }
+                        }
+                    }
+                }
+                
+                // 偏好能同时威胁多个棋子的移动
+                score += threatenedPieces * 8;
+                
+                // 进攻性棋子优先
+                if (piece.type === 'queen' || piece.type === 'rook' || piece.type === 'bishop') {
+                    score += 5;
+                }
+                
+                // 确保安全 - 避免把自己的高价值棋子暴露在危险中
+                if (isSquareThreatened(toRow, toCol, opponentColor, fromRow, fromCol)) {
+                    score -= pieceValues[piece.type] * 10;
+                }
+            }
+            
+            return { ...move, score, moveCost };
+        });
+        
+        // 移动排序
+        evaluatedMoves.sort((a, b) => b.score - a.score);
+        
+        // 进攻阶段 - 如果有足够行动力，尝试执行两步移动
+        if (isAttackPhase && evaluatedMoves.length >= 2) {
+            const firstMove = evaluatedMoves[0];
+            
+            // 查找第二个最佳移动（与第一个不冲突）
+            let secondMoveIndex = 1;
+            while (secondMoveIndex < evaluatedMoves.length) {
+                const secondMove = evaluatedMoves[secondMoveIndex];
+                
+                // 检查两个移动是否冲突（不能是同一个棋子）
+                const isSamePiece = firstMove.fromRow === secondMove.fromRow && 
+                                  firstMove.fromCol === secondMove.fromCol;
+                
+                // 检查两个移动的行动力总和是否超出可用行动力
+                const totalCost = firstMove.moveCost + secondMove.moveCost;
+                const enoughAP = totalCost <= currentAP;
+                
+                // 不冲突且有足够行动力执行两个移动
+                if (!isSamePiece && enoughAP && secondMove.score > 0) {
+                    console.log("魏延策略: 找到两路进攻机会!");
+                    
+                    // 将第一个移动标记为"连招"，主要目的是为了视觉效果
+                    firstMove.isWeiyanCombo = true;
+                    firstMove.nextMove = secondMove;
+                    return firstMove;
+                }
+                
+                secondMoveIndex++;
+            }
+        }
+        
+        // 如果没有找到双路进攻或者在准备阶段，返回单个最佳移动
+        return evaluatedMoves[0];
+    }
 
-        gameState.cooldownIntervals[key] = intervalId;
+    // 修改AI策略选择部分，添加魏延AI
+    function aiMove() {
+        if (!gameState.isAIThinking && gameState.currentPlayer === 'black') {
+            gameState.isAIThinking = true;
+            
+            // 短暂延迟，给UI更新的时间
+            setTimeout(() => {
+                let bestMove;
+                if (gameState.aiStrategy === 'weiyuan') {
+                    bestMove = findWeiYanMove('black');
+                } else if (gameState.aiStrategy === 'simayi') {
+                    bestMove = findSimaYiMove('black');
+                } else {
+                    bestMove = findBestMove('black');
+                }
+                
+                if (bestMove) {
+                    // 处理魏延的连招特殊情况
+                    if (bestMove.isWeiyanCombo && bestMove.nextMove) {
+                        const nextMove = bestMove.nextMove;
+                        
+                        // 执行第一步移动
+                        movePiece(bestMove.fromRow, bestMove.fromCol, bestMove.toRow, bestMove.toCol);
+                        
+                        // 短暂延迟后执行第二步移动
+                        setTimeout(() => {
+                            if (gameState.gameActive) {
+                                movePiece(nextMove.fromRow, nextMove.fromCol, nextMove.toRow, nextMove.toCol);
+                            }
+                        }, 300); // 300毫秒后执行第二步移动
+                    } else if (bestMove) {
+                        movePiece(bestMove.fromRow, bestMove.fromCol, bestMove.toRow, bestMove.toCol);
+                    }
+                    
+                    // 更新预测移动显示
+                    displayPredictedMoves();
+                }
+                
+                gameState.isAIThinking = false;
+            }, 500);
+        }
     }
 
 }); 
