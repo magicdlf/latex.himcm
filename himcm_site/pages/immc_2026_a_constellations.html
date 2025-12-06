@@ -1050,6 +1050,15 @@
 
                 // 初始绘制
                 drawProjection();
+
+                // 如访问链接时带有 hash（例如 #viewer），则自动进入全屏观星模式
+                // 用于课堂演示或直接分享“观星模式”的链接
+                if (window.location.hash === '#viewer' || window.location.hash === '#fullscreen') {
+                    // 稍微延迟一下，等星数据与布局准备好
+                    setTimeout(() => {
+                        toggleFullscreen();
+                    }, 100);
+                }
             </script>
 
             <div class="highlight-box" style="margin-top: 30px;">
