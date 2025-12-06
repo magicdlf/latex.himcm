@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2017A Drone Delivery - Outstanding Case Analysis</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for LaTeX support -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h1>HiMCM Hub</h1>
+            </div>
+            <button class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../index.html#practice">竞赛手记</a></li>
+                <li><a href="../index.html#outstanding">优秀案例</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 页面头部 -->
+    <header class="page-header">
+        <div class="container">
+            <h1 class="page-title">2017A: Drone Delivery System</h1>
+            <p class="hero-subtitle">Outstanding Solution Analysis</p>
+            <div class="page-meta">
+                <span>📅 Year: 2017</span>
+                <span>🏆 Outstanding Paper</span>
+                <span>🚁 Logistics/Optimization</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 内容区域 -->
+    <main class="content-wrapper">
+        <a href="../index.html" class="back-link">← Back to Home</a>
+        
+        <section class="content-section">
+            <h2>Problem Statement</h2>
+            <p>
+                The 2017A problem focused on designing an efficient drone delivery system for urban areas. 
+                Teams were tasked with optimizing delivery routes, warehouse locations, and fleet management 
+                while considering battery life, payload capacity, and regulatory constraints.
+            </p>
+            <div class="highlight-box">
+                <strong>Core Challenge:</strong> Developing a scalable delivery network that balances speed, 
+                efficiency, and coverage while managing technical limitations of drone technology.
+            </div>
+        </section>
+
+        <section class="content-section">
+            <h2>Outstanding Approach Analysis</h2>
+            <h3>1. Network Design</h3>
+            <p>
+                The outstanding solution employed a hub-and-spoke model with strategically placed 
+                charging stations and distribution centers.
+            </p>
+            
+            <h3>2. Key Innovations</h3>
+            <ul>
+                <li>Dynamic routing algorithms adapting to real-time demand</li>
+                <li>Multi-objective optimization for cost, time, and energy</li>
+                <li>Weather-adaptive flight path planning</li>
+                <li>Automated fleet rebalancing strategies</li>
+            </ul>
+            
+            <h3>3. Optimization Framework</h3>
+            <p>
+                The team used mixed-integer linear programming combined with heuristic algorithms 
+                to solve the complex routing and scheduling problems.
+            </p>
+        </section>
+
+        <section class="content-section">
+            <h2>Critical Success Factors</h2>
+            <div class="highlight-box">
+                <ul>
+                    <li><strong>Realistic Constraints:</strong> Careful consideration of regulatory and technical limitations</li>
+                    <li><strong>Scalability:</strong> Solution designed to work from small to large-scale operations</li>
+                    <li><strong>Economic Analysis:</strong> Comprehensive cost-benefit evaluation</li>
+                    <li><strong>Safety Considerations:</strong> Risk assessment and mitigation strategies</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <h2>Key Takeaways</h2>
+            <p>
+                This outstanding solution excelled in:
+            </p>
+            <ol>
+                <li>Combining multiple optimization techniques effectively</li>
+                <li>Addressing real-world operational constraints</li>
+                <li>Providing scalable and adaptable solutions</li>
+                <li>Balancing technical innovation with practical feasibility</li>
+            </ol>
+        </section>
+
+        <section class="content-section">
+            <h2>Lessons for Future Participants</h2>
+            <p>
+                Strategic insights from this outstanding paper:
+            </p>
+            <ul>
+                <li>Consider both immediate and long-term scalability in system design</li>
+                <li>Use simulation to validate optimization results</li>
+                <li>Include sensitivity analysis for key parameters</li>
+                <li>Present clear implementation roadmaps for proposed solutions</li>
+            </ul>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 HiMCM Competition Hub. Built with passion for mathematical modeling.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 移动端导航菜单切换
+        document.getElementById('navToggle').addEventListener('click', function() {
+            document.getElementById('navMenu').classList.toggle('active');
+            this.classList.toggle('active');
+        });
+    </script>
+</body>
+</html>

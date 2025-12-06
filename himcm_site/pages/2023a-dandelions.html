@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2023A Dandelions Spread - Outstanding Case Analysis</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for LaTeX support -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h1>HiMCM Hub</h1>
+            </div>
+            <button class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../index.html#practice">竞赛手记</a></li>
+                <li><a href="../index.html#outstanding">优秀案例</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 页面头部 -->
+    <header class="page-header">
+        <div class="container">
+            <h1 class="page-title">2023A: Dandelions Spread</h1>
+            <p class="hero-subtitle">Outstanding Solution Analysis</p>
+            <div class="page-meta">
+                <span>📅 Year: 2023</span>
+                <span>🏆 Outstanding Paper</span>
+                <span>🌱 Ecology/Dispersal</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 内容区域 -->
+    <main class="content-wrapper">
+        <a href="../index.html" class="back-link">← Back to Home</a>
+        
+        <section class="content-section">
+            <h2>Problem Statement</h2>
+            <p>
+                The 2023A problem examined dandelion seed dispersal patterns and their ecological impact. 
+                Teams needed to model how dandelion seeds spread across different terrains and weather conditions,
+                analyzing their colonization patterns and environmental effects.
+            </p>
+            <div class="highlight-box">
+                <strong>Core Challenge:</strong> Creating accurate dispersal models that account for wind patterns, 
+                seed characteristics, and environmental factors affecting germination and growth.
+            </div>
+        </section>
+
+        <section class="content-section">
+            <h2>Outstanding Approach Analysis</h2>
+            <h3>1. Dispersal Modeling</h3>
+            <p>
+                The winning team developed a sophisticated aerodynamic model for seed flight, 
+                incorporating turbulence and variable wind conditions.
+            </p>
+            
+            <h3>2. Key Innovations</h3>
+            <ul>
+                <li>3D trajectory simulation with computational fluid dynamics</li>
+                <li>Probabilistic germination models based on soil conditions</li>
+                <li>Competition modeling with existing vegetation</li>
+                <li>Long-term population spread predictions</li>
+            </ul>
+            
+            <h3>3. Technical Implementation</h3>
+            <p>
+                The solution combined Monte Carlo simulations with cellular automata to model 
+                both individual seed dispersal and population-level dynamics.
+            </p>
+        </section>
+
+        <section class="content-section">
+            <h2>Critical Success Factors</h2>
+            <div class="highlight-box">
+                <ul>
+                    <li><strong>Physical Accuracy:</strong> Detailed aerodynamic modeling of seed flight</li>
+                    <li><strong>Multi-scale Approach:</strong> From individual seeds to population dynamics</li>
+                    <li><strong>Validation:</strong> Comparison with ecological field studies</li>
+                    <li><strong>Practical Insights:</strong> Management strategies for invasive spread</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <h2>Key Takeaways</h2>
+            <p>
+                This outstanding solution demonstrates excellence in:
+            </p>
+            <ol>
+                <li>Bridging physics and ecology in mathematical modeling</li>
+                <li>Using multiple modeling paradigms effectively</li>
+                <li>Balancing model sophistication with computational feasibility</li>
+                <li>Providing clear ecological and management insights</li>
+            </ol>
+        </section>
+
+        <section class="content-section">
+            <h2>Lessons for Future Participants</h2>
+            <p>
+                Key strategies demonstrated by this outstanding paper:
+            </p>
+            <ul>
+                <li>Consider multiple spatial and temporal scales in ecological models</li>
+                <li>Validate models using available scientific literature</li>
+                <li>Use visualization effectively to communicate complex dynamics</li>
+                <li>Connect mathematical results to real-world applications</li>
+            </ul>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 HiMCM Competition Hub. Built with passion for mathematical modeling.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 移动端导航菜单切换
+        document.getElementById('navToggle').addEventListener('click', function() {
+            document.getElementById('navMenu').classList.toggle('active');
+            this.classList.toggle('active');
+        });
+    </script>
+</body>
+</html>
